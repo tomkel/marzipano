@@ -162,7 +162,6 @@ Scene.prototype.switchTo = function(opts, done) {
  */
 Scene.prototype.lookTo = function(params, opts, done) {
   // TODO: allow controls to interrupt an ongoing tween.
-  // TODO: provide a way to override the easing function.
   opts = opts || {};
   done = done || noop;
 
@@ -188,7 +187,7 @@ Scene.prototype.lookTo = function(params, opts, done) {
   }
 
   // Quadratic in/out easing.
-  var ease = function (k) {
+  var ease = opts.easing || function (k) {
     if ((k *= 2) < 1) {
       return 0.5 * k * k;
     }

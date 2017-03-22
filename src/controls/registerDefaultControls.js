@@ -18,6 +18,7 @@
 var defaults = require('../util/defaults');
 var DragControlMethod = require('./Drag');
 var QtvrControlMethod = require('./Qtvr');
+var PtrLockControlMethod = require('./PtrLock');
 var ScrollZoomControlMethod = require('./ScrollZoom');
 var PinchZoomControlMethod = require('./PinchZoom');
 var KeyControlMethod = require('./Key');
@@ -50,6 +51,7 @@ function registerDefaultControls(controls, element, opts) {
   var controlMethods = {
     mouseViewDrag: new DragControlMethod(element, 'mouse'),
     mouseViewQtvr: new QtvrControlMethod(element, 'mouse'),
+    mouseViewPtrLock: new PtrLockControlMethod(element, 'mouse'),
     touchView: new DragControlMethod(element, 'touch'),
     pinch: new PinchZoomControlMethod(element, 'touch'),
 
@@ -87,6 +89,9 @@ function registerDefaultControls(controls, element, opts) {
       break;
     case 'qtvr':
       enabledControls.push('mouseViewQtvr');
+      break;
+    case 'ptrlock':
+      enabledControls.push('mouseViewPtrLock');
       break;
     default:
       throw new Error("Unknown mouse view mode: " + opts.mouseViewMode);

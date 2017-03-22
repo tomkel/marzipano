@@ -22,7 +22,7 @@ var eventEmitter = require('minimal-event-emitter');
 var maxFriction = require('./util').maxFriction;
 
 var defaultOptions = {
-  speed: 8,
+  speed: 2,
   friction: 6,
   maxFrictionTime: 0.3
 };
@@ -45,34 +45,29 @@ var defaultOptions = {
  */
 // TODO: allow speed not change linearly with distance to click spot.
 // Quadratic or other would allow a larger speed range.
-function QtvrControlMethod(element, pointerType, opts) {
+function PtrLockControlMethod(element, pointerType, opts) {
   this._element = element;
 
   this._opts = defaults(opts || {}, defaultOptions);
 
   this._active = false;
 
-  this._hammer = HammerGestures.get(element, pointerType);
-
   this._dynamics = {
     x: new Dynamics(),
     y: new Dynamics()
   };
 
-  this._hammer.on('panstart', this._handleStart.bind(this));
-  this._hammer.on('panmove', this._handleMove.bind(this));
-  this._hammer.on('panend', this._handleRelease.bind(this));
-  this._hammer.on('pancancel', this._handleRelease.bind(this));
+  this._element.addEventListener('click', this._handleStart.bind(this))
+  this._element.addEventListener('mousemove', this._handleMove.bind(this))
+  document.addEventListener('pointerlockchange', this._handleRelease.bind(this))
 }
 
-eventEmitter(QtvrControlMethod);
+eventEmitter(PtrLockControlMethod);
 
 /**
  * Destroy the instance
  */
-QtvrControlMethod.prototype.destroy = function() {
-  this._hammer.release();
-  this._hammer = null;
+PtrLockControlMethod.prototype.destroy = function() {
   this._element = null;
   this._opts = null;
   this._active = null;
@@ -80,62 +75,71 @@ QtvrControlMethod.prototype.destroy = function() {
 };
 
 
-QtvrControlMethod.prototype._handleStart = function(e) {
-  // Prevent event dragging other DOM elements and causing strange behavior on Chrome
+PtrLockControlMethod.prototype._handleStart = function(e) {
   e.preventDefault();
 
   if (!this._active) {
     this._active = true;
     this.emit('active');
+    this._element.requestPointerLock();
   }
 };
 
 
-QtvrControlMethod.prototype._handleMove = function(e) {
-  // Prevent event dragging other DOM elements and causing strange behavior on Chrome
+PtrLockControlMethod.prototype._handleMove = function(e) {
+  if (!this._active) return
+
   e.preventDefault();
 
   this._updateDynamics(e, false);
 };
 
 
-QtvrControlMethod.prototype._handleRelease = function(e) {
-  // Prevent event dragging other DOM elements and causing strange behavior on Chrome
-  e.preventDefault();
-
-  this._updateDynamics(e, true);
-
+PtrLockControlMethod.prototype._handleRelease = function(e) {
   if (this._active) {
-    this._active = false;
-    this.emit('inactive');
+    this._updateDynamics(e, true);
+
+   // this._active = false;
+    //this.emit('inactive');
   }
 };
 
 
 var tmpReleaseFriction = [ null, null ];
-QtvrControlMethod.prototype._updateDynamics = function(e, release) {
-  var elementRect = this._element.getBoundingClientRect();
-  var width = elementRect.right - elementRect.left;
-  var height = elementRect.bottom - elementRect.top;
-  var maxDim = Math.max(width, height);
+PtrLockControlMethod.prototype._updateDynamics = function(e, release) {
+  console.log(Date.now(), e)
+  if (!release) {
+    var elementRect = this._element.getBoundingClientRect();
+    var width = elementRect.right - elementRect.left;
+    var height = elementRect.bottom - elementRect.top;
+    var maxDim = Math.max(width, height);
 
-  var x = e.deltaX / maxDim * this._opts.speed;
-  var y = e.deltaY / maxDim * this._opts.speed;
+    //var xD = e.clientX - width/2
+    //var yD = e.clientY - height/2
 
-  this._dynamics.x.reset();
-  this._dynamics.y.reset();
-  this._dynamics.x.velocity = x;
-  this._dynamics.y.velocity = y;
+    // box in the center that doesnt move camera
+    //xD = Math.abs(xD) < 40 ? 0 : xD
+    //yD = Math.abs(yD) < 40 ? 0 : yD
 
-  if (release) {
-    maxFriction(this._opts.friction, this._dynamics.x.velocity, this._dynamics.y.velocity, this._opts.maxFrictionTime, tmpReleaseFriction);
-    this._dynamics.x.friction = tmpReleaseFriction[0];
-    this._dynamics.y.friction = tmpReleaseFriction[1];
+    var xD = e.movementX / 10
+    var yD = e.movementY / 10
+
+    //xD = xD/10 * this._opts.speed
+    //yD = yD/10 * this._opts.speed
+    console.log(xD,yD)
+
+    this._dynamics.x.reset();
+    this._dynamics.y.reset();
+    this._dynamics.x.velocity = xD;
+    this._dynamics.y.velocity = yD;
   }
+  maxFriction(this._opts.friction, this._dynamics.x.velocity, this._dynamics.y.velocity, this._opts.maxFrictionTime, tmpReleaseFriction);
+  this._dynamics.x.friction = tmpReleaseFriction[0];
+  this._dynamics.y.friction = tmpReleaseFriction[1];
 
   this.emit('parameterDynamics', 'x', this._dynamics.x);
   this.emit('parameterDynamics', 'y', this._dynamics.y);
 };
 
 
-module.exports = QtvrControlMethod;
+module.exports = PtrLockControlMethod;
