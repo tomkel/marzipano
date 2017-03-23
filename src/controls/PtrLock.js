@@ -76,21 +76,15 @@ PtrLockControlMethod.prototype.destroy = function() {
 
 
 PtrLockControlMethod.prototype._handleStart = function(e) {
+  if (this._active) return
   e.preventDefault();
-
-  if (!this._active) {
-    this._active = true;
-    this.emit('active');
-    this._element.requestPointerLock();
-  }
+  this._element.requestPointerLock();
 };
 
 
 PtrLockControlMethod.prototype._handleMove = function(e) {
   if (!this._active) return
-
   e.preventDefault();
-
   this._updateDynamics(e, false);
 };
 
@@ -98,35 +92,22 @@ PtrLockControlMethod.prototype._handleMove = function(e) {
 PtrLockControlMethod.prototype._handleRelease = function(e) {
   if (this._active) {
     this._updateDynamics(e, true);
-
-   // this._active = false;
-    //this.emit('inactive');
   }
+  this._active = !this._active;
+  this.emit(this._active ? 'active' : 'inactive');
 };
 
 
 var tmpReleaseFriction = [ null, null ];
 PtrLockControlMethod.prototype._updateDynamics = function(e, release) {
-  console.log(Date.now(), e)
   if (!release) {
     var elementRect = this._element.getBoundingClientRect();
     var width = elementRect.right - elementRect.left;
     var height = elementRect.bottom - elementRect.top;
     var maxDim = Math.max(width, height);
 
-    //var xD = e.clientX - width/2
-    //var yD = e.clientY - height/2
-
-    // box in the center that doesnt move camera
-    //xD = Math.abs(xD) < 40 ? 0 : xD
-    //yD = Math.abs(yD) < 40 ? 0 : yD
-
     var xD = e.movementX / 10
     var yD = e.movementY / 10
-
-    //xD = xD/10 * this._opts.speed
-    //yD = yD/10 * this._opts.speed
-    console.log(xD,yD)
 
     this._dynamics.x.reset();
     this._dynamics.y.reset();
