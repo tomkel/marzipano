@@ -51,7 +51,6 @@ function registerDefaultControls(controls, element, opts) {
   var controlMethods = {
     mouseViewDrag: new DragControlMethod(element, 'mouse'),
     mouseViewQtvr: new QtvrControlMethod(element, 'mouse'),
-    mouseViewPtrLock: new PtrLockControlMethod(element, 'mouse'),
     touchView: new DragControlMethod(element, 'touch'),
     pinch: new PinchZoomControlMethod(element, 'touch'),
 
@@ -92,6 +91,7 @@ function registerDefaultControls(controls, element, opts) {
       break;
     case 'ptrlock':
       enabledControls.push('mouseViewPtrLock');
+      controlMethods.mouseViewPtrLock = new PtrLockControlMethod(element, 'mouse');
       break;
     default:
       throw new Error("Unknown mouse view mode: " + opts.mouseViewMode);
